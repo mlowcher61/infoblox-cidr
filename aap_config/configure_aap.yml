@@ -71,13 +71,13 @@
         name: "{{ aap_organization.name }}"
         description: "{{ aap_organization.description | default(omit) }}"
 
-    - name: Ensure execution environment is registered
-      ansible.platform.execution_environment:
-        <<: *conn
-        name: "{{ aap_execution_environment.name }}"
-        image: "{{ aap_execution_environment.image }}"
-        organization: "{{ aap_organization.name }}"
-        pull: "{{ aap_execution_environment.pull | default('missing') }}"
+    # - name: Ensure execution environment is registered
+    #   ansible.platform.execution_environment:
+    #     <<: *conn
+    #     name: "{{ aap_execution_environment.name }}"
+    #     image: "{{ aap_execution_environment.image }}"
+    #     organization: "{{ aap_organization.name }}"
+    #     pull: "{{ aap_execution_environment.pull | default('missing') }}"
 
     - name: Ensure project (this Git repo) is registered
       ansible.platform.project:
@@ -104,7 +104,7 @@
         inventory: "{{ aap_inventory.name }}"
         variables:
           ansible_connection: local
-          ansible_python_interpreter: !unsafe "{{ ansible_playbook_python }}"
+          ansible_python_interpreter: "{{ ansible_playbook_python }}"
 
     - name: Ensure custom credential type — Infoblox NIOS Grid
       ansible.platform.credential_type:

@@ -1,0 +1,32 @@
+---
+# AAP objects to provision. Edit names, image registry, and Git URL to
+# match your environment. Re-runs are idempotent (modules upsert by name).
+
+aap_organization:
+  name: Infoblox CIDR
+  description: Owner of the Infoblox Intelligent CIDR Allocation automation.
+
+aap_execution_environment:
+  name: Infoblox CIDR EE
+  # TODO: replace with the registry path you pushed your built EE to.
+  # Build def: execution-environment/execution-environment.yml.
+  image: registry.example.com/infoblox-cidr-ee:latest
+  pull: missing
+
+aap_project:
+  name: Infoblox Intelligent CIDR Allocation
+  # TODO: replace with the Git URL of THIS repository in your SCM.
+  scm_url: https://github.com/mlowcher61/infoblox-cidr.git
+  scm_branch: main
+  scm_update_on_launch: true
+
+aap_inventory:
+  name: Infoblox CIDR (localhost)
+  description: Localhost — the role drives Infoblox APIs, not managed nodes.
+
+aap_job_template:
+  name: Allocate Infoblox CIDR
+  ask_credential_on_launch: true     # operator picks NIOS or UDDI at launch
+  ask_variables_on_launch: false     # survey supplies all inputs
+  extra_vars: {}
+  credentials: []

@@ -1,0 +1,48 @@
+---
+# Discover existing children under cidr_parent in Universal DDI.
+#
+# In UDDI, the parent can be an Address Block or a Subnet living inside
+# an IP Space. Children may be sub-blocks (address_block) or subnets.
+
+- name: UDDI — assert IP Space is provided
+  ansible.builtin.assert:
+    that:
+      - cidr_ip_space is defined and cidr_ip_space | length > 0
+    fail_msg: >
+      cidr_ip_space must be set for Universal DDI requests. It names the
+      Infoblox IP Space the parent block lives in.
+
+- name: "UDDI — list address blocks under {{ cidr_parent }}"
+  infoblox.universal_ddi.ipam_address_block_info:
+    filters:
+      address: "{{ cidr_parent | ansible.utils.ipaddr('network') }}"
+      space: "{{ cidr_ip_space }}"
+    # ask for descendants of the parent
+    tfilters:
+      parent: "{{ cidr_parent }}"
+  register: _uddi_blocks
+  failed_when: false
+
+- name: "UDDI — list subnets under {{ cidr_parent }}"
+  infoblox.universal_ddi.ipam_subnet_info:
+    filters:
+      space: "{{ cidr_ip_space }}"
+    tfilters:
+      parent: "{{ cidr_parent }}"
+  register: _uddi_subnets
+  failed_when: false
+
+- name: UDDI — record occupied blocks
+  ansible.builtin.set_fact:
+    cidr_allocation_result: >-
+      {{ cidr_allocation_result | combine({
+           'occupied': (
+             ((_uddi_blocks.objects | default([])) | map(attribute='address') | zip(
+              (_uddi_blocks.objects | default([])) | map(attribute='cidr')) |
+              map('join', '/') | list)
+             +
+             ((_uddi_subnets.objects | default([])) | map(attribute='address') | zip(
+              (_uddi_subnets.objects | default([])) | map(attribute='cidr')) |
+              map('join', '/') | list)
+           ) | unique | sort
+         }) }}

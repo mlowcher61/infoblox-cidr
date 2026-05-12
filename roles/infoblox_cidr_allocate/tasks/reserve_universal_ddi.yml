@@ -1,0 +1,28 @@
+---
+# Reserve the chosen block in Universal DDI as either a subnet or a
+# (nestable) address block.
+
+- name: "UDDI — split chosen CIDR into address and prefix"
+  ansible.builtin.set_fact:
+    _uddi_addr: "{{ _chosen_block | ansible.utils.ipaddr('network') }}"
+    _uddi_cidr: "{{ _chosen_block | ansible.utils.ipaddr('prefix') }}"
+
+- name: "UDDI — reserve {{ _chosen_block }} as a subnet"
+  infoblox.universal_ddi.ipam_subnet:
+    address: "{{ _uddi_addr }}"
+    cidr: "{{ _uddi_cidr | int }}"
+    space: "{{ cidr_ip_space }}"
+    comment: "{{ cidr_comment }}"
+    state: present
+  register: _uddi_reserve_subnet
+  when: cidr_object_type == 'subnet'
+
+- name: "UDDI — reserve {{ _chosen_block }} as an address block"
+  infoblox.universal_ddi.ipam_address_block:
+    address: "{{ _uddi_addr }}"
+    cidr: "{{ _uddi_cidr | int }}"
+    space: "{{ cidr_ip_space }}"
+    comment: "{{ cidr_comment }}"
+    state: present
+  register: _uddi_reserve_block
+  when: cidr_object_type == 'address_block'

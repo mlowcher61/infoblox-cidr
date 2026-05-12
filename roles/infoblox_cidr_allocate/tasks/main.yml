@@ -1,0 +1,101 @@
+---
+# Orchestrator.
+#
+#   1. Discover existing children of the parent (platform-specific include).
+#   2. Compute the next aligned, non-overlapping block of the requested size
+#      using the `find_next_aligned_block` filter plugin.
+#   3. If --dry-run, print and stop.
+#   4. Otherwise dispatch to the platform-specific reserve task.
+#
+# Result envelope:
+#   cidr_allocation_result = {
+#     parent:       "10.217.0.0/16",
+#     requested:    "/22",
+#     chosen:       "10.217.8.0/22",      # or null when dry-run shows nothing
+#     occupied:     ["10.217.0.0/22", "10.217.4.0/22"],
+#     candidates:   ["10.217.8.0/22", "10.217.12.0/22", ...],   # up to 5
+#     reserved:     true|false,
+#     platform:     "nios"|"universal_ddi"
+#   }
+
+- name: Initialise result envelope
+  ansible.builtin.set_fact:
+    cidr_allocation_result:
+      parent: "{{ cidr_parent }}"
+      requested: "/{{ cidr_prefix }}"
+      platform: "{{ infoblox_platform }}"
+      occupied: []
+      candidates: []
+      chosen: null
+      reserved: false
+
+- name: "Discover existing children of {{ cidr_parent }}"
+  ansible.builtin.include_tasks: "discover_{{ infoblox_platform }}.yml"
+
+# ───────────────────────────────────────────────────────────────────────────
+# CORE — alignment-aware selection. The heavy lifting lives in
+# filter_plugins/cidr_allocation.py (`find_next_aligned_block`). The
+# filter must:
+#   1. Reject candidates whose first address is not aligned on the /N
+#      boundary (e.g. /22 must start at *.0, *.4, *.8, ... in the 3rd octet).
+#   2. Reject candidates that overlap any of `occupied`.
+#   3. Return the first such candidate per `policy`.
+# ───────────────────────────────────────────────────────────────────────────
+- name: Compute next aligned block (and a preview of alternatives)
+  ansible.builtin.set_fact:
+    _chosen_block: >-
+      {{ cidr_parent | find_next_aligned_block(cidr_prefix | int,
+                                               cidr_allocation_result.occupied,
+                                               policy=cidr_allocation_policy) }}
+    _candidate_preview: >-
+      {{ cidr_parent | list_aligned_blocks(cidr_prefix | int,
+                                           cidr_allocation_result.occupied,
+                                           limit=5) }}
+
+- name: Fail clearly if no aligned block is available
+  ansible.builtin.assert:
+    that:
+      - _chosen_block is not none and _chosen_block | length > 0
+    fail_msg: |
+      No aligned /{{ cidr_prefix }} block available inside {{ cidr_parent }}.
+      Occupied blocks discovered:
+      {{ cidr_allocation_result.occupied | to_nice_yaml }}
+
+- name: Update result envelope with chosen block and candidate preview
+  ansible.builtin.set_fact:
+    cidr_allocation_result: >-
+      {{ cidr_allocation_result | combine({
+           'chosen': _chosen_block,
+           'candidates': _candidate_preview
+         }) }}
+
+- name: Show the allocation plan
+  ansible.builtin.debug:
+    msg:
+      - "Parent:    {{ cidr_allocation_result.parent }}"
+      - "Requested: {{ cidr_allocation_result.requested }}"
+      - "Chosen:    {{ cidr_allocation_result.chosen }}"
+      - "Occupied:  {{ cidr_allocation_result.occupied }}"
+      - "Other available candidates (up to 5): {{ cidr_allocation_result.candidates }}"
+
+- name: Dry-run — skip reservation
+  ansible.builtin.meta: end_play
+  when: cidr_dry_run | bool
+
+- name: "Reserve {{ _chosen_block }} in Infoblox"
+  ansible.builtin.include_tasks: "reserve_{{ infoblox_platform }}.yml"
+
+- name: Mark result envelope reserved
+  ansible.builtin.set_fact:
+    cidr_allocation_result: "{{ cidr_allocation_result | combine({'reserved': true}) }}"
+
+- name: Render summary report to disk
+  ansible.builtin.template:
+    src: summary.j2
+    dest: "{{ playbook_dir }}/cidr_allocation_summary.txt"
+    mode: "0644"
+  delegate_to: localhost
+
+- name: Print final summary
+  ansible.builtin.debug:
+    msg: "{{ lookup('ansible.builtin.template', 'summary.j2').splitlines() }}"

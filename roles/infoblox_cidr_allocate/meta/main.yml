@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  role_name: infoblox_cidr_allocate
+  author: mlowcher61
+  description: >-
+    Intelligent, alignment-aware CIDR allocation from an Infoblox parent
+    container — works against on-prem NIOS (infoblox.nios_modules) or
+    cloud Universal DDI (infoblox.universal_ddi).
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions: [all]
+dependencies: []

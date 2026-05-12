@@ -1,0 +1,49 @@
+---
+# AAP job-template entrypoint for Intelligent CIDR Allocation.
+#
+# Attach exactly ONE of:
+#   - "Infoblox NIOS Grid"        (custom credential type)
+#   - "Infoblox Universal DDI"    (custom credential type)
+#
+# The credential type injects `infoblox_platform` automatically.
+#
+# Survey variables (see aap_config/survey.json):
+#   cidr_parent             — e.g. "10.217.0.0/16"           [required]
+#   cidr_prefix             — desired prefix length, e.g. 22  [required]
+#   cidr_comment            — free text recorded on the new block
+#   cidr_dry_run            — true/false (default false)
+#   cidr_network_view       — NIOS network view (default "default")
+#   cidr_ip_space           — UDDI IP Space name              [required for UDDI]
+#   cidr_object_type        — "subnet" or "address_block"  (UDDI only, default "subnet")
+
+- name: Allocate next aligned CIDR from Infoblox
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  pre_tasks:
+    - name: Assert a credential was attached (infoblox_platform was set)
+      ansible.builtin.assert:
+        that:
+          - infoblox_platform is defined
+          - infoblox_platform in ['nios', 'universal_ddi']
+        fail_msg: |
+          No Infoblox credential attached to this job template.
+          Attach either the "Infoblox NIOS Grid" or
+          "Infoblox Universal DDI" custom credential.
+
+    - name: Assert survey inputs are present and sensible
+      ansible.builtin.assert:
+        that:
+          - cidr_parent is defined and cidr_parent | ansible.utils.ipaddr('net') is truthy
+          - cidr_prefix is defined
+          - (cidr_prefix | int) >= 1 and (cidr_prefix | int) <= 32
+          - (cidr_prefix | int) > (cidr_parent | ansible.utils.ipaddr('prefix') | int)
+        fail_msg: |
+          cidr_parent must be a valid CIDR (e.g. 10.217.0.0/16) and cidr_prefix
+          must be a longer prefix than the parent (1-32). Got:
+            cidr_parent={{ cidr_parent | default('<unset>') }}
+            cidr_prefix={{ cidr_prefix | default('<unset>') }}
+
+  roles:
+    - role: infoblox_cidr_allocate

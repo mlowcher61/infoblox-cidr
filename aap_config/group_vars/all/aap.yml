@@ -1,0 +1,15 @@
+---
+# Controller connection. Reads from environment so this file is safe to commit.
+#
+#   export CONTROLLER_HOST=https://aap.example.com
+#   export CONTROLLER_OAUTH_TOKEN=********           # preferred
+#   # OR:
+#   export CONTROLLER_USERNAME=admin
+#   export CONTROLLER_PASSWORD=********
+#   export CONTROLLER_VERIFY_SSL=true                # default true
+
+aap_hostname: "{{ lookup('env', 'CONTROLLER_HOST') }}"
+aap_username: "{{ lookup('env', 'CONTROLLER_USERNAME') | default(omit, true) }}"
+aap_password: "{{ lookup('env', 'CONTROLLER_PASSWORD') | default(omit, true) }}"
+aap_token: "{{ lookup('env', 'CONTROLLER_OAUTH_TOKEN') | default(omit, true) }}"
+aap_validate_certs: "{{ (lookup('env', 'CONTROLLER_VERIFY_SSL') | default('true', true)) | bool }}"

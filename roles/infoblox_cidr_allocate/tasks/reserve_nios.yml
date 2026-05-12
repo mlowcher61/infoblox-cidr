@@ -1,0 +1,17 @@
+---
+# Reserve the chosen block in NIOS as a network (leaf subnet).
+#
+# If the operator wants a container (further sub-allocations underneath),
+# set cidr_nios_create_as_container=true.
+
+- name: "NIOS — reserve {{ _chosen_block }} as {{ 'networkcontainer' if (cidr_nios_create_as_container | default(false)) else 'network' }}"
+  infoblox.nios_modules.nios_network:
+    network: "{{ _chosen_block }}"
+    network_view: "{{ cidr_network_view }}"
+    container: "{{ cidr_nios_create_as_container | default(false) | bool }}"
+    comment: "{{ cidr_comment }}"
+    state: present
+  register: _nios_reserve
+  retries: 2
+  delay: 3
+  until: _nios_reserve is succeeded

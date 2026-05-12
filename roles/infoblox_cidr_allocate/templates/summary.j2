@@ -1,0 +1,24 @@
+================================================================
+ Infoblox Intelligent CIDR Allocation — summary
+================================================================
+Platform:          {{ cidr_allocation_result.platform }}
+Parent container:  {{ cidr_allocation_result.parent }}
+Requested prefix:  {{ cidr_allocation_result.requested }}
+Allocation policy: {{ cidr_allocation_policy }}
+Dry run:           {{ cidr_dry_run | bool }}
+
+Result:
+  Chosen block:    {{ cidr_allocation_result.chosen or '(none — no aligned block available)' }}
+  Reserved:        {{ cidr_allocation_result.reserved }}
+  Comment:         {{ cidr_comment }}
+
+Discovered occupied blocks ({{ cidr_allocation_result.occupied | length }}):
+{% for o in cidr_allocation_result.occupied %}
+  - {{ o }}
+{% endfor %}
+
+Other available candidates (next {{ cidr_allocation_result.candidates | length }}):
+{% for c in cidr_allocation_result.candidates %}
+  - {{ c }}
+{% endfor %}
+================================================================

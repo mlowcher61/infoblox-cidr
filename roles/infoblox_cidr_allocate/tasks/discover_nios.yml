@@ -1,0 +1,30 @@
+---
+# Discover existing networks under cidr_parent in NIOS.
+#
+# NIOS treats the parent as a network container. Children may be:
+#   - networkcontainer objects (further nesting)
+#   - network objects (leaf subnets)
+# Both occupy address space, so we union them.
+#
+# infoblox.nios_modules has no first-class info module, but the WAPI
+# supports `_return_fields` + `network_container=<parent>` lookups via
+# the nios_lookup plugin shipped in the collection.
+
+- name: "NIOS — list networks under {{ cidr_parent }} in view {{ cidr_network_view }}"
+  ansible.builtin.set_fact:
+    _nios_children: >-
+      {{ lookup('infoblox.nios_modules.nios_lookup', 'network',
+                filter={'network_container': cidr_parent,
+                        'network_view': cidr_network_view},
+                return_fields=['network']) | default([], true)
+         + lookup('infoblox.nios_modules.nios_lookup', 'networkcontainer',
+                  filter={'network_container': cidr_parent,
+                          'network_view': cidr_network_view},
+                  return_fields=['network']) | default([], true) }}
+
+- name: NIOS — record occupied blocks
+  ansible.builtin.set_fact:
+    cidr_allocation_result: >-
+      {{ cidr_allocation_result | combine({
+           'occupied': (_nios_children | map(attribute='network') | list) | unique | sort
+         }) }}

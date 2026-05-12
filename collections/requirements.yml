@@ -1,0 +1,19 @@
+---
+collections:
+  # On-prem NIOS Grid (certified)
+  - name: infoblox.nios_modules
+    version: ">=1.9.0,<2.0.0"
+
+  # Infoblox Cloud / Universal DDI (certified)
+  - name: infoblox.universal_ddi
+    version: ">=1.1.0,<2.0.0"
+
+  # netaddr / ipaddr filters used for CIDR math fallbacks
+  - name: ansible.utils
+    version: ">=2.0.0"
+
+  # AAP Config-as-Code (Gateway Configuration). Used by
+  # aap_config/configure_aap.yml to provision Org / EE / Project /
+  # Inventory / Credential Types / Job Template + Survey.
+  - name: ansible.platform
+    version: ">=2.5.0"

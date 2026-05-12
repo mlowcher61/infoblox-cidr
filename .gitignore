@@ -1,0 +1,10 @@
+collections/ansible_collections/
+*.retry
+*.pyc
+__pycache__/
+.venv/
+venv/
+.DS_Store
+
+# Runtime artifact written by the role
+cidr_allocation_summary.txt

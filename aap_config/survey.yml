@@ -1,0 +1,90 @@
+---
+# Job-template survey for "Allocate Infoblox CIDR".
+#
+# Survey schema used by the ansible.platform.job_template module's `survey`
+# parameter (same shape AAP itself exports). Lives next to the JT so the
+# survey IS source-controlled.
+#
+# Operator example:
+#   cidr_parent      = 10.217.0.0/16
+#   cidr_prefix      = 22
+#   cidr_comment     = "Cluster A, project foo"
+
+name: Allocate Infoblox CIDR
+description: Request the next aligned, non-overlapping CIDR block from an Infoblox parent container.
+spec:
+  - question_name: Parent CIDR container
+    question_description: >-
+      The Infoblox container/space to carve from, e.g. "10.217.0.0/16".
+    variable: cidr_parent
+    type: text
+    required: true
+    default: ""
+
+  - question_name: Desired prefix length
+    question_description: >-
+      The size of the block you want, in CIDR notation. For "give me a /22",
+      enter 22. Must be longer (more specific) than the parent prefix.
+    variable: cidr_prefix
+    type: integer
+    required: true
+    min: 1
+    max: 32
+    default: 24
+
+  - question_name: Comment / justification
+    question_description: Free text recorded on the new Infoblox object.
+    variable: cidr_comment
+    type: text
+    required: false
+    default: "Allocated by AAP CIDR allocator"
+
+  - question_name: Dry run?
+    question_description: >-
+      If true, compute and display the chosen block but do NOT reserve it
+      in Infoblox.
+    variable: cidr_dry_run
+    type: multiplechoice
+    required: true
+    choices:
+      - "false"
+      - "true"
+    default: "false"
+
+  - question_name: Allocation policy
+    question_description: >-
+      first-fit picks the lowest aligned slot; last-fit picks the highest.
+    variable: cidr_allocation_policy
+    type: multiplechoice
+    required: true
+    choices:
+      - first-fit
+      - last-fit
+    default: first-fit
+
+  - question_name: NIOS network view (NIOS only — ignored for Universal DDI)
+    variable: cidr_network_view
+    type: text
+    required: false
+    default: default
+
+  - question_name: Universal DDI IP Space (UDDI only — ignored for NIOS)
+    question_description: >-
+      Name of the Infoblox Cloud IP Space holding the parent. Required when
+      using the Universal DDI credential.
+    variable: cidr_ip_space
+    type: text
+    required: false
+    default: ""
+
+  - question_name: UDDI object type (UDDI only)
+    question_description: >-
+      "subnet" for a leaf network, "address_block" if you intend to carve
+      further from the result.
+    variable: cidr_object_type
+    type: multiplechoice
+    required: true
+    choices:
+      - subnet
+      - address_block
+    default: subnet

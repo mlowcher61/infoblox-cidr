@@ -1,0 +1,146 @@
+---
+# AAP Config-as-Code entrypoint for the Infoblox Intelligent CIDR
+# Allocation solution.
+#
+# Provisions, idempotently, every NON-SECRET AAP object the project needs:
+#   Organization → Execution Environment → Project → Inventory (+localhost)
+#   → Credential Types (NIOS + UDDI) → Job Template (with survey).
+#
+# Credential *instances* (the things holding real Infoblox host/user/key
+# values) are deliberately out of scope. They are created by an admin
+# directly in AAP — Resources → Credentials → Add — selecting the
+# "Infoblox NIOS Grid" or "Infoblox Universal DDI" custom type that
+# this playbook installs. AAP encrypts those values in its own database,
+# so no secret material ever lives in source.
+#
+# Prereqs:
+#   1. ansible.platform collection installed (collections/requirements.yml).
+#   2. Controller endpoint + auth available via env vars or
+#      group_vars/all/aap.yml:
+#        CONTROLLER_HOST       https://aap.example.com
+#        CONTROLLER_OAUTH_TOKEN  ********    (OR USERNAME + PASSWORD)
+#
+# Usage:
+#   ansible-playbook aap_config/configure_aap.yml
+
+- name: Configure AAP for Infoblox Intelligent CIDR Allocation
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars:
+    _conn: &conn
+      controller_host: "{{ aap_hostname }}"
+      controller_username: "{{ aap_username | default(omit) }}"
+      controller_password: "{{ aap_password | default(omit) }}"
+      controller_oauth_token: "{{ aap_token | default(omit) }}"
+      validate_certs: "{{ aap_validate_certs }}"
+      state: present
+
+  pre_tasks:
+    - name: Sanity-check controller connection vars
+      ansible.builtin.assert:
+        that:
+          - aap_hostname is defined and aap_hostname | length > 0
+          - (aap_token | default('')) | length > 0 or
+            ((aap_username | default('')) | length > 0 and
+             (aap_password | default('')) | length > 0)
+        fail_msg: |
+          Set CONTROLLER_HOST and either CONTROLLER_OAUTH_TOKEN
+          or CONTROLLER_USERNAME + CONTROLLER_PASSWORD.
+
+    - name: Load NIOS credential type schema (authoritative source)
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/credential_type_nios.yml"
+        name: ct_nios
+
+    - name: Load Universal DDI credential type schema (authoritative source)
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/credential_type_universal_ddi.yml"
+        name: ct_uddi
+
+    - name: Load survey definition (authoritative source)
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/survey.yml"
+        name: cidr_survey
+
+  tasks:
+    - name: Ensure organization exists
+      ansible.platform.organization:
+        <<: *conn
+        name: "{{ aap_organization.name }}"
+        description: "{{ aap_organization.description | default(omit) }}"
+
+    - name: Ensure execution environment is registered
+      ansible.platform.execution_environment:
+        <<: *conn
+        name: "{{ aap_execution_environment.name }}"
+        image: "{{ aap_execution_environment.image }}"
+        organization: "{{ aap_organization.name }}"
+        pull: "{{ aap_execution_environment.pull | default('missing') }}"
+
+    - name: Ensure project (this Git repo) is registered
+      ansible.platform.project:
+        <<: *conn
+        name: "{{ aap_project.name }}"
+        organization: "{{ aap_organization.name }}"
+        scm_type: git
+        scm_url: "{{ aap_project.scm_url }}"
+        scm_branch: "{{ aap_project.scm_branch | default('main') }}"
+        scm_update_on_launch: "{{ aap_project.scm_update_on_launch | default(true) }}"
+        default_environment: "{{ aap_execution_environment.name }}"
+
+    - name: Ensure inventory exists
+      ansible.platform.inventory:
+        <<: *conn
+        name: "{{ aap_inventory.name }}"
+        organization: "{{ aap_organization.name }}"
+        description: "{{ aap_inventory.description | default(omit) }}"
+
+    - name: Add localhost to inventory
+      ansible.platform.host:
+        <<: *conn
+        name: localhost
+        inventory: "{{ aap_inventory.name }}"
+        variables:
+          ansible_connection: local
+          ansible_python_interpreter: !unsafe "{{ ansible_playbook_python }}"
+
+    - name: Ensure custom credential type — Infoblox NIOS Grid
+      ansible.platform.credential_type:
+        <<: *conn
+        name: "{{ ct_nios.name }}"
+        description: "{{ ct_nios.description }}"
+        kind: "{{ ct_nios.kind }}"
+        inputs: "{{ ct_nios.inputs }}"
+        injectors: "{{ ct_nios.injectors }}"
+
+    - name: Ensure custom credential type — Infoblox Universal DDI
+      ansible.platform.credential_type:
+        <<: *conn
+        name: "{{ ct_uddi.name }}"
+        description: "{{ ct_uddi.description }}"
+        kind: "{{ ct_uddi.kind }}"
+        inputs: "{{ ct_uddi.inputs }}"
+        injectors: "{{ ct_uddi.injectors }}"
+
+    # Credential *instances* are NOT created here — see header for why.
+
+    - name: Ensure job template — Allocate Infoblox CIDR (with survey)
+      ansible.platform.job_template:
+        <<: *conn
+        name: "{{ aap_job_template.name }}"
+        organization: "{{ aap_organization.name }}"
+        project: "{{ aap_project.name }}"
+        playbook: playbooks/allocate_cidr.yml
+        inventory: "{{ aap_inventory.name }}"
+        execution_environment: "{{ aap_execution_environment.name }}"
+        ask_credential_on_launch: "{{ aap_job_template.ask_credential_on_launch | default(true) }}"
+        ask_variables_on_launch: "{{ aap_job_template.ask_variables_on_launch | default(false) }}"
+        extra_vars: "{{ aap_job_template.extra_vars | default({}) }}"
+        credentials: "{{ aap_job_template.credentials | default([]) }}"
+        survey_enabled: true
+        survey_spec:
+          name: "{{ cidr_survey.name }}"
+          description: "{{ cidr_survey.description }}"
+          spec: "{{ cidr_survey.spec }}"

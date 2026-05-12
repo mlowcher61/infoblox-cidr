@@ -1,0 +1,24 @@
+---
+# Which Infoblox platform to target. Normally injected by the AAP
+# credential type (see aap_config/credential_type_*.yml). Override at
+# the command line with -e infoblox_platform=nios|universal_ddi.
+infoblox_platform: nios
+
+# ─── Request inputs (typically set by the AAP survey) ──────────────────────
+cidr_parent: ""             # e.g. "10.217.0.0/16"
+cidr_prefix: 24             # desired prefix length (longer than parent)
+cidr_comment: "Allocated by AAP CIDR allocator"
+
+# Print the chosen block and exit without reserving anything.
+cidr_dry_run: false
+
+# Allocation policy passed to the alignment filter. See the filter plugin
+# for the contract. Common values: "first-fit", "last-fit".
+cidr_allocation_policy: first-fit
+
+# ─── NIOS-only ────────────────────────────────────────────────────────────
+cidr_network_view: default
+
+# ─── Universal DDI only ──────────────────────────────────────────────────
+cidr_ip_space: ""           # name of the IP Space the parent lives in
+cidr_object_type: subnet    # "subnet" or "address_block"

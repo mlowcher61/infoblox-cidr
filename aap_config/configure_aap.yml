@@ -71,16 +71,20 @@
         name: "{{ aap_organization.name }}"
         description: "{{ aap_organization.description | default(omit) }}"
 
-    # - name: Ensure execution environment is registered
-    #   ansible.platform.execution_environment:
-    #     <<: *conn
-    #     name: "{{ aap_execution_environment.name }}"
-    #     image: "{{ aap_execution_environment.image }}"
-    #     organization: "{{ aap_organization.name }}"
-    #     pull: "{{ aap_execution_environment.pull | default('missing') }}"
+    - name: Ensure execution environment is registered
+      ansible.controller.execution_environment:
+        <<: *conn
+        name: "{{ aap_execution_environment.name }}"
+        image: "{{ aap_execution_environment.image }}"
+        organization: "{{ aap_organization.name }}"
+        pull: "{{ aap_execution_environment.pull | default('missing') }}"
 
+    # ansible.platform doesn't ship a project module — Gateway only covers
+    # Org/Team/User/Auth objects. Controller-scoped objects (Project, JT,
+    # Inventory, Credential, Credential Type, EE) still come from
+    # ansible.controller.
     - name: Ensure project (this Git repo) is registered
-      ansible.platform.project:
+      ansible.controller.project:
         <<: *conn
         name: "{{ aap_project.name }}"
         organization: "{{ aap_organization.name }}"
@@ -91,14 +95,14 @@
         default_environment: "{{ aap_execution_environment.name }}"
 
     - name: Ensure inventory exists
-      ansible.platform.inventory:
+      ansible.controller.inventory:
         <<: *conn
         name: "{{ aap_inventory.name }}"
         organization: "{{ aap_organization.name }}"
         description: "{{ aap_inventory.description | default(omit) }}"
 
     - name: Add localhost to inventory
-      ansible.platform.host:
+      ansible.controller.host:
         <<: *conn
         name: localhost
         inventory: "{{ aap_inventory.name }}"
@@ -107,7 +111,7 @@
           ansible_python_interpreter: "{{ ansible_playbook_python }}"
 
     - name: Ensure custom credential type — Infoblox NIOS Grid
-      ansible.platform.credential_type:
+      ansible.controller.credential_type:
         <<: *conn
         name: "{{ ct_nios.name }}"
         description: "{{ ct_nios.description }}"
@@ -116,7 +120,7 @@
         injectors: "{{ ct_nios.injectors }}"
 
     - name: Ensure custom credential type — Infoblox Universal DDI
-      ansible.platform.credential_type:
+      ansible.controller.credential_type:
         <<: *conn
         name: "{{ ct_uddi.name }}"
         description: "{{ ct_uddi.description }}"
@@ -127,7 +131,7 @@
     # Credential *instances* are NOT created here — see header for why.
 
     - name: Ensure job template — Allocate Infoblox CIDR (with survey)
-      ansible.platform.job_template:
+      ansible.controller.job_template:
         <<: *conn
         name: "{{ aap_job_template.name }}"
         organization: "{{ aap_organization.name }}"

@@ -12,8 +12,14 @@ collections:
   - name: ansible.utils
     version: ">=2.0.0"
 
-  # AAP Config-as-Code (Gateway Configuration). Used by
-  # aap_config/configure_aap.yml to provision Org / EE / Project /
-  # Inventory / Credential Types / Job Template + Survey.
+  # AAP Config-as-Code — Gateway layer (Org / Team / User / Auth).
+  # Used by aap_config/configure_aap.yml.
   - name: ansible.platform
     version: ">=2.5.0"
+
+  # AAP Config-as-Code — Controller layer. ansible.platform does NOT
+  # ship a `project` module (or JT / inventory / credential_type /
+  # execution_environment); those still live in ansible.controller.
+  # Used alongside ansible.platform in aap_config/configure_aap.yml.
+  - name: ansible.controller
+    version: ">=4.5.0"

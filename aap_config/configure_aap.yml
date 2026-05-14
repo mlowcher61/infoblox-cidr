@@ -84,7 +84,7 @@
 
     - name: Ensure execution environment is registered
       ansible.controller.execution_environment:
-        <<: *conn_controller
+        #<<: *conn_controller
         name: "{{ aap_execution_environment.name }}"
         image: "{{ aap_execution_environment.image }}"
         organization: "{{ aap_organization.name }}"

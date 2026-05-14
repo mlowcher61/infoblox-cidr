@@ -1,0 +1,6 @@
+{
+  "yaml.customTags": [
+    "!unsafe scalar",
+    "!vault scalar"
+  ]
+}

@@ -6,12 +6,12 @@
 #   Organization → Execution Environment → Project → Inventory (+localhost)
 #   → Credential Types (NIOS + UDDI) → Job Template (with survey).
 #
-# Credential *instances* (the things holding real Infoblox host/user/key
-# values) are deliberately out of scope. They are created by an admin
-# directly in AAP — Resources → Credentials → Add — selecting the
-# "Infoblox NIOS Grid" or "Infoblox Universal DDI" custom type that
-# this playbook installs. AAP encrypts those values in its own database,
-# so no secret material ever lives in source.
+# Two PLACEHOLDER credential instances are also created (one per custom
+# type) with "CHANGEME" non-secret values and blank passwords/keys. An
+# admin must edit them in the AAP UI — Resources → Credentials — to set
+# real Infoblox host/user/key values BEFORE launching the job template.
+# No real secret material ever lives in source. A debug reminder is
+# emitted at the end of this playbook.
 #
 # Prereqs:
 #   1. ansible.platform collection installed (collections/requirements.yml).
@@ -139,7 +139,37 @@
         inputs: "{{ ct_uddi.inputs }}"
         injectors: "{{ ct_uddi.injectors }}"
 
-    # Credential *instances* are NOT created here — see header for why.
+    # Placeholder credential instances. Real Infoblox values must be set
+    # by an admin in the AAP UI before the job template can run. Note:
+    # re-running this playbook RESETS these inputs back to placeholders,
+    # so once an admin has filled in real values, take care when re-running.
+    - name: Ensure placeholder credential — Infoblox NIOS Grid
+      ansible.controller.credential:
+        #<<: *conn_controller
+        name: "{{ ct_nios.name }} (placeholder)"
+        organization: "{{ aap_organization.name }}"
+        credential_type: "{{ ct_nios.name }}"
+        description: >-
+          Placeholder credential. Replace CHANGEME values and set the
+          password in AAP (Resources → Credentials) before launching
+          the "{{ aap_job_template.name }}" template.
+        inputs:
+          nios_host: CHANGEME
+          nios_username: CHANGEME
+          nios_password: ""
+
+    - name: Ensure placeholder credential — Infoblox Universal DDI
+      ansible.controller.credential:
+        #<<: *conn_controller
+        name: "{{ ct_uddi.name }} (placeholder)"
+        organization: "{{ aap_organization.name }}"
+        credential_type: "{{ ct_uddi.name }}"
+        description: >-
+          Placeholder credential. Set the API key in AAP
+          (Resources → Credentials) before launching the
+          "{{ aap_job_template.name }}" template.
+        inputs:
+          infoblox_portal_key: ""
 
     - name: Ensure job template — Allocate Infoblox CIDR (with survey)
       ansible.controller.job_template:
@@ -159,3 +189,18 @@
           name: "{{ cidr_survey.name }}"
           description: "{{ cidr_survey.description }}"
           spec: "{{ cidr_survey.spec }}"
+
+    - name: Reminder — placeholder credentials must be edited before use
+      ansible.builtin.debug:
+        msg:
+          - "============================================================"
+          - "ACTION REQUIRED before running '{{ aap_job_template.name }}':"
+          - ""
+          - "Two placeholder credentials were created in AAP:"
+          - "  • {{ ct_nios.name }} (placeholder)"
+          - "  • {{ ct_uddi.name }} (placeholder)"
+          - ""
+          - "Both contain CHANGEME values and blank passwords/keys."
+          - "Edit them in AAP (Resources → Credentials) with real"
+          - "Infoblox host/user/key values, then launch the template."
+          - "============================================================"

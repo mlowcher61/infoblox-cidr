@@ -1,0 +1,4 @@
+systemd-devel [platform:rpm compile]
+pkgconf-pkg-config [platform:rpm compile]
+gcc [platform:rpm compile]
+python3.12-devel [platform:rpm compile]

@@ -10,7 +10,7 @@ aap_execution_environment:
   name: Infoblox CIDR EE
   # TODO: replace with the registry path you pushed your built EE to.
   # Build def: execution-environment/execution-environment.yml.
-  image: registry.example.com/infoblox-cidr-ee:latest
+  image: quay.io/locust61/infoblox-cidr-ee:latest
   pull: missing
 
 aap_project:

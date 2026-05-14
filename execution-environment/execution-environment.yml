@@ -10,7 +10,7 @@ dependencies:
   python:
     - jmespath
     - netaddr
-  system: []
+  system: ./bindep.txt
 
 additional_build_steps:
   append_final:

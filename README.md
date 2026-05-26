@@ -16,6 +16,12 @@ Supports both Infoblox platforms via two custom AAP credential types:
 | On-prem NIOS Grid     | `infoblox.nios_modules`        | `aap_config/credential_type_nios.yml`        |
 | Cloud / Universal DDI | `infoblox.universal_ddi`       | `aap_config/credential_type_universal_ddi.yml` |
 
+## Presentation
+
+A 10-slide overview deck of this solution (problem, alignment-aware
+algorithm, dual-platform support, AAP packaging, and getting started)
+is in [`docs/infoblox_cidr_overview.pptx`](docs/infoblox_cidr_overview.pptx).
+
 ## Why "alignment-aware"?
 
 A subnet has to start on an address divisible by its size. Asking for a

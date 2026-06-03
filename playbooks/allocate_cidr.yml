@@ -46,4 +46,7 @@
             cidr_prefix={{ cidr_prefix | default('<unset>') }}
 
   roles:
-    - role: infoblox_cidr_allocate
+    # Reference the role by a path relative to this playbook so it resolves
+    # regardless of cwd or how the project is nested in AAP (ansible.cfg's
+    # roles_path is only honored when cwd == the directory holding ansible.cfg).
+    - role: "{{ playbook_dir }}/../roles/infoblox_cidr_allocate"

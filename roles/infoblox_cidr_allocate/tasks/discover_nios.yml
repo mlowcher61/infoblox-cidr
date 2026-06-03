@@ -16,11 +16,11 @@
       {{ lookup('infoblox.nios_modules.nios_lookup', 'network',
                 filter={'network_container': cidr_parent,
                         'network_view': cidr_network_view},
-                return_fields=['network']) | default([], true)
+                return_fields=['network'], provider=nios_provider) | default([], true)
          + lookup('infoblox.nios_modules.nios_lookup', 'networkcontainer',
                   filter={'network_container': cidr_parent,
                           'network_view': cidr_network_view},
-                  return_fields=['network']) | default([], true) }}
+                  return_fields=['network'], provider=nios_provider) | default([], true) }}
 
 - name: NIOS — record occupied blocks
   ansible.builtin.set_fact:

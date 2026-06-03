@@ -1,0 +1,13 @@
+---
+# NIOS WAPI connection, sourced from the env vars the "Infoblox NIOS Grid"
+# credential type injects (see aap_config/credential_type_nios.yml).
+#
+# This dict is passed explicitly to nios_network and the nios_lookup calls.
+# Modules would also resolve these via env_fallback, but lookup plugins do
+# not — so the explicit provider is required for the discover step.
+nios_provider:
+  host: "{{ lookup('env', 'INFOBLOX_HOST') }}"
+  username: "{{ lookup('env', 'INFOBLOX_USERNAME') }}"
+  password: "{{ lookup('env', 'INFOBLOX_PASSWORD') }}"
+  wapi_version: "{{ lookup('env', 'INFOBLOX_WAPI_VERSION') | default('2.12', true) }}"
+  validate_certs: "{{ (lookup('env', 'INFOBLOX_SSL_VERIFY') | default('true', true)) | bool }}"

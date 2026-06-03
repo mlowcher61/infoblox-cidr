@@ -11,6 +11,7 @@
     container: "{{ cidr_nios_create_as_container | default(false) | bool }}"
     comment: "{{ cidr_comment }}"
     state: present
+    provider: "{{ nios_provider }}"
   register: _nios_reserve
   retries: 2
   delay: 3

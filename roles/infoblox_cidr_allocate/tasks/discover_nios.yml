@@ -13,14 +13,14 @@
 - name: "NIOS — list networks under {{ cidr_parent }} in view {{ cidr_network_view }}"
   ansible.builtin.set_fact:
     _nios_children: >-
-      {{ lookup('infoblox.nios_modules.nios_lookup', 'network',
-                filter={'network_container': cidr_parent,
-                        'network_view': cidr_network_view},
-                return_fields=['network'], provider=nios_provider) | default([], true)
-         + lookup('infoblox.nios_modules.nios_lookup', 'networkcontainer',
-                  filter={'network_container': cidr_parent,
-                          'network_view': cidr_network_view},
-                  return_fields=['network'], provider=nios_provider) | default([], true) }}
+      {{ query('infoblox.nios_modules.nios_lookup', 'network',
+               filter={'network_container': cidr_parent,
+                       'network_view': cidr_network_view},
+               return_fields=['network'], provider=nios_provider) | default([], true)
+         + query('infoblox.nios_modules.nios_lookup', 'networkcontainer',
+                 filter={'network_container': cidr_parent,
+                         'network_view': cidr_network_view},
+                 return_fields=['network'], provider=nios_provider) | default([], true) }}
 
 - name: NIOS — record occupied blocks
   ansible.builtin.set_fact:
